@@ -61,13 +61,16 @@ class EC2Cluster(Construct):
              allow_all_outbound=True)
 
         # Create the launch template
-        def read_pub_key(public_key_file: str):
-            with open(os.path.expandvars(public_key_file)) as fp:
-                pub_key = fp.readlines()[-1]
+        def read_pub_key(public_key: str):
+            if Path(public_key).exists():
+                with open(os.path.expandvars(public_key)) as fp:
+                    pk = fp.readlines()[-1]
+            else:
+                pk = public_key.strip()
 
             return ec2.CfnKeyPair(self, "SSHKey",
                                      key_name=f"{id}EC2InstanceSSHKey",
-                                     public_key_material=pub_key)
+                                     public_key_material=pk)
         key_name=None
         if public_key:
             ssh_key = read_pub_key(public_key)
