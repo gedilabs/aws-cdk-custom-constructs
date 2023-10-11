@@ -20,7 +20,7 @@ class EC2Cluster(Construct):
     def __init__(self, scope: Construct, id: str,
                  vpc: ec2.IVpc,
                  subnets: ec2.SubnetSelection,
-                 user_data_path: str,
+                 user_data_path: Optional[str],
                  public_key: str,
                  instance_type: str,
                  env_dict: dict,
@@ -50,10 +50,11 @@ class EC2Cluster(Construct):
             for cmd in commands:
                 user_data.add_commands(cmd)
 
-        with open(str(user_data_path)) as fp:
-            lines = fp.readlines()
-            for line in lines:
-                user_data.add_commands(line)
+        if user_data_path:
+            with open(str(user_data_path)) as fp:
+                lines = fp.readlines()
+                for line in lines:
+                    user_data.add_commands(line)
 
         self.security_group = ec2.SecurityGroup(self, "SG",
              vpc=vpc,
