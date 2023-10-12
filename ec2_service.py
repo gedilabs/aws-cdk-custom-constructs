@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 
 from typing import Optional, Sequence, Mapping, Union, Dict
+import logging
 
 class EC2Cluster(Construct):
     def __init__(self, scope: Construct, id: str,
@@ -64,9 +65,11 @@ class EC2Cluster(Construct):
         def read_pub_key(public_key: str):
             if Path(public_key).exists():
                 with open(os.path.expandvars(public_key)) as fp:
-                    pk = fp.readlines()[-1]
+                    pk = fp.readlines()[-1].strip()
+                    print(f"Public key from file :: {pk}")
             else:
                 pk = public_key.strip()
+                print(f"Public key from string :: {pk}")
 
             return ec2.CfnKeyPair(self, "SSHKey",
                                      key_name=f"{id}EC2InstanceSSHKey",
