@@ -27,6 +27,7 @@ class EC2Cluster(Construct):
                  env_dict: dict,
                  max_capacity: int,
                  desired_capacity: int,
+                 suffix: Optional[str] = "",
                  **kwargs) -> None:
         super().__init__(scope, id)
 
@@ -72,7 +73,7 @@ class EC2Cluster(Construct):
                 print(f"Public key from string :: {pk}")
 
             return ec2.CfnKeyPair(self, "SSHKey",
-                                     key_name=f"{id}EC2InstanceSSHKey",
+                                     key_name=f"{id}EC2InstanceSSHKey{suffix}",
                                      public_key_material=pk)
         key_name=None
         if public_key:
@@ -117,6 +118,7 @@ class EC2Service(Construct):
                  container_environment: Optional[Mapping[str, str]] = None,
                  command: Optional[Sequence[str]] = None,
                  secrets: Optional[Mapping[str, ecs.Secret]] = None,
+                 suffix: Optional[str] = "", 
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -135,7 +137,7 @@ class EC2Service(Construct):
         _id = re.sub(r'(?<!^)(?=[A-Z])', '-', id).lower()
         task_def_id = task_family_name if task_family_name else _id
         self.task_definition = ecs.Ec2TaskDefinition(self, "TaskDefinition",
-                                                  family=task_def_id,
+                                                  family=f"{task_def_id}{suffix}" ,
                                                   task_role=self.task_role)
 
         port_mappings = list()
