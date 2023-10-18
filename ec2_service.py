@@ -137,7 +137,7 @@ class EC2Service(Construct):
         camel_case_id = re.sub(r'(?<!^)(?=[A-Z])', '-', id).lower()
         task_def_id = task_family_name if task_family_name else camel_case_id 
         self.task_definition = ecs.Ec2TaskDefinition(self, "TaskDefinition",
-                                                  family=f"{task_def_id}{suffix}" ,
+                                                  family=task_def_id,
                                                   task_role=self.task_role)
 
         port_mappings = list()
