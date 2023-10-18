@@ -127,7 +127,7 @@ class EC2Service(Construct):
                                        removal_policy=cdk.RemovalPolicy.DESTROY)
 
         self.task_role = iam.Role(self, "TaskRole",
-                             role_name=f"{id}TaskRole",
+                             role_name=f"{id}TaskRole{suffix}",
                              assumed_by=iam.CompositePrincipal(
                                  iam.ServicePrincipal("ecs.amazonaws.com"),
                                  iam.ServicePrincipal("ecs-tasks.amazonaws.com")
