@@ -73,7 +73,7 @@ class EC2Cluster(Construct):
                 print(f"Public key from string :: {pk}")
 
             return ec2.CfnKeyPair(self, "SSHKey",
-                                     key_name=f"{id}EC2InstanceSSHKey{suffix}",
+                                     key_name=f"{id}EC2InstanceSSHKey",
                                      public_key_material=pk)
         key_name=None
         if public_key:
@@ -127,7 +127,7 @@ class EC2Service(Construct):
                                        removal_policy=cdk.RemovalPolicy.DESTROY)
 
         self.task_role = iam.Role(self, "TaskRole",
-                             role_name=f"{id}TaskRole{suffix}",
+                             role_name=f"TaskRole{id}",
                              assumed_by=iam.CompositePrincipal(
                                  iam.ServicePrincipal("ecs.amazonaws.com"),
                                  iam.ServicePrincipal("ecs-tasks.amazonaws.com")
