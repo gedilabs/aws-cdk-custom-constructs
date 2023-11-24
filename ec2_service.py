@@ -7,7 +7,8 @@ from aws_cdk import (
     aws_logs as logs,
     aws_ecs as ecs,
     aws_ec2 as ec2,
-    aws_autoscaling as autoscaling
+    aws_autoscaling as autoscaling,
+    custom_resources as cr
 )
 
 import re
@@ -90,7 +91,7 @@ class EC2Cluster(Construct):
         )
 
         # Create an Auto Scaling Group
-        auto_scaling_group = autoscaling.AutoScalingGroup(self, "AutoScalingGroup",
+        self.auto_scaling_group = autoscaling.AutoScalingGroup(self, "AutoScalingGroup",
             vpc=vpc,
             max_capacity=max_capacity,
             desired_capacity=desired_capacity,
@@ -98,9 +99,25 @@ class EC2Cluster(Construct):
             vpc_subnets=subnets
         )
 
+        # for ASG deletions: https://github.com/aws/aws-cdk/issues/18179
+        asg_force_delete = cr.AwsCustomResource(self, "AsgForceDelete",
+            on_delete = cr.AwsSdkCall(
+                service='AutoScaling',
+                action='deleteAutoScalingGroup',
+                parameters={
+                    "AutoScalingGroupName": self.auto_scaling_group.auto_scaling_group_name,
+                    "ForceDelete": True
+                }
+            ),
+            policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
+                resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
+            )
+        )
+        asg_force_delete.node.add_dependency(self.auto_scaling_group)
+
         # Add custom cluster capacity
         self.capacity_provider = ecs.AsgCapacityProvider(self, "AsgCapacityProvider",
-            auto_scaling_group=auto_scaling_group
+            auto_scaling_group=self.auto_scaling_group
         )
         self.cluster.add_asg_capacity_provider(self.capacity_provider)
 
