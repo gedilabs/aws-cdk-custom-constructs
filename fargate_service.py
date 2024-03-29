@@ -13,7 +13,7 @@ import os
 
 from typing import Optional, Sequence, Mapping, Union
 
-class FargateService(Construct):
+class ECSService(Construct):
     def __init__(self, scope: Construct, id: str,
                  vpc: ec2.IVpc,
                  subnets: ec2.SubnetSelection,
