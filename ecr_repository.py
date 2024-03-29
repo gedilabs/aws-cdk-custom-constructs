@@ -108,15 +108,14 @@ class ECRRepository(Construct):
                                  platform=Platform.LINUX_AMD64,
                                  build_args=build_args
         )
-
         ECRDeployment(self,
-                      f'{repository_name}EcrDeployment',
+                      'VersionedEcrDeployment',
                       src=DockerImageName(image.image_uri),
                       dest=DockerImageName(f'{self.ecr_repo.repository_uri}:{image_tag}'),
                       )
 
         ECRDeployment(self,
-                      f'{repository_name}EcrDeploymentLatest',
+                      'LatestEcrDeployment',
                       src=DockerImageName(image.image_uri),
                       dest=DockerImageName(f'{self.ecr_repo.repository_uri}:latest'),
                       )

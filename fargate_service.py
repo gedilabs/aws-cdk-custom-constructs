@@ -6,6 +6,7 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_ecr as ecr
 
 import re
 import os
@@ -17,7 +18,8 @@ class ECSService(Construct):
                  vpc: ec2.IVpc,
                  subnets: ec2.SubnetSelection,
                  cluster: ecs.Cluster,
-                 container_image: ecs.ContainerImage,
+                 repository: ecr.Repository,
+                 image_tag: str,
                  container_count: int = 1,
                  task_family_name: Union[str, None] = None,
                  task_cpu: str = "1024",
@@ -33,20 +35,14 @@ class ECSService(Construct):
                                        retention=logs.RetentionDays.ONE_WEEK,
                                        removal_policy=cdk.RemovalPolicy.DESTROY)
 
-        self.task_role = iam.Role(self, "TaskRole",
-                             role_name=f"{id}TaskRole",
-                             assumed_by=iam.CompositePrincipal(
-                                 iam.ServicePrincipal("ecs.amazonaws.com"),
-                                 iam.ServicePrincipal("ecs-tasks.amazonaws.com")
-                             ))
-
         # camel to hyphenated case
         _id = re.sub(r'(?<!^)(?=[A-Z])', '-', id).lower()
         task_def_id = task_family_name if task_family_name else _id
         self.task_definition = ecs.TaskDefinition(self, "TaskDefinition",
                                                   family=task_def_id,
-                                                  compatibility=ecs.Compatibility.EC2,
-                                                  task_role=self.task_role)
+                                                  compatibility=ecs.Compatibility.EC2_AND_FARGATE,
+                                                  cpu=task_cpu,
+                                                  memory_mib=task_memory_mib,)
 
         port_mapping = ecs.PortMapping(
             container_port=port,
@@ -59,9 +55,11 @@ class ECSService(Construct):
                                                 vpc=vpc,
                                                 allow_all_outbound=True
                                                 )
+        
+        self.container_image = ecs.ContainerImage.from_ecr_repository(repository, tag=image_tag) 
 
         self.container = self.task_definition.add_container(id=id,
-                                                            image=container_image,
+                                                            image=self.container_image,
                                                             port_mappings=[port_mapping],
                                                             environment=container_environment,
                                                             essential=True,
@@ -72,23 +70,14 @@ class ECSService(Construct):
                                                             command=command,
                                                             secrets=secrets)
 
-        #service_connect_config = ecs.ServiceConnectProps(
-        #    services=[
-        #        ecs.ServiceConnectService(
-        #            port_mapping_name=port_mapping.name,
-        #            dns_name=port_mapping.name,
-        #        )
-        #    ]
-        #)
-
         self.service = ecs.FargateService(self, "Service",
                                           cluster=cluster,
                                           service_name=id,
                                           task_definition=self.task_definition,
                                           security_groups=[self.security_group],
                                           vpc_subnets=subnets,
-                                          desired_count=container_count,
-                                          service_connect_configuration=service_connect_config)
+                                          assign_public_ip=True,
+                                          desired_count=container_count)
 
         CfnOutput(self, 'ServiceTaskDefinition', value=self.service.task_definition.task_definition_arn)
         CfnOutput(self, 'ServiceLogs', value=self.log_group.log_group_arn)
